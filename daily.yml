@@ -1,0 +1,26 @@
+name: daily-digest
+on:
+  schedule:
+    - cron: "0 22 * * *"   # UTC 22:00 = 台北/伯斯 隔天早上 06:00
+  workflow_dispatch: {}     # 可手動執行測試
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install anthropic
+      - run: python generate.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      - name: Commit updated site
+        run: |
+          git config user.name "digest-bot"
+          git config user.email "digest-bot@users.noreply.github.com"
+          git add docs
+          git commit -m "digest $(date -u +%F)" || echo "no changes"
+          git push
